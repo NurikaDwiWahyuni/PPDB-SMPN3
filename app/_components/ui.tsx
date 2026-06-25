@@ -137,16 +137,17 @@ export function StepBar({ steps, current }: { steps: string[]; current: number }
   )
 }
 
-// ── Logo sekolah (SVG inline) ──
+// ── Logo sekolah ──
 export function LogoSekolah({ size = 40 }: { size?: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <rect width="40" height="40" rx="10" fill="#355872"/>
-      <path d="M20 6L8 13v3h2v12h4V18h12v10h4V16h2v-3L20 6z" fill="white"/>
-      <rect x="15" y="22" width="4" height="6" rx="1" fill="#9CD5FF"/>
-      <rect x="21" y="22" width="4" height="6" rx="1" fill="#9CD5FF"/>
-      <path d="M20 8.5l9 5.5v1H11v-1l9-5.5z" fill="#9CD5FF"/>
-    </svg>
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src="/logo.png"
+      alt="Logo SMP Negeri 3 Bagan Sinembah"
+      width={size}
+      height={size}
+      style={{ width: size, height: size, objectFit: 'contain' }}
+    />
   )
 }
 

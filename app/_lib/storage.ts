@@ -36,7 +36,12 @@ export async function simpanFile(
       upsert: true,
     })
 
-  if (error) throw new Error(`Gagal upload file: ${error.message}`)
+  if (error) {
+    console.error('[simpanFile] Supabase error:', error)
+    console.error('[simpanFile] SUPABASE_URL:', process.env.NEXT_PUBLIC_SUPABASE_URL ? 'SET' : 'MISSING')
+    console.error('[simpanFile] SERVICE_KEY:', process.env.SUPABASE_SERVICE_ROLE_KEY ? 'SET' : 'MISSING')
+    throw new Error(`Gagal upload file: ${error.message}`)
+  }
 
   return filePath
 }
