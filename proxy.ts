@@ -14,6 +14,7 @@ export async function proxy(req: NextRequest) {
     return NextResponse.next()
   }
 
+  // Halaman public admin (login) — redirect ke dashboard jika sudah login
   if (PUBLIC_ADMIN_PATHS.some((p) => pathname === p || pathname.startsWith(p + '/'))) {
     const raw = req.cookies.get(COOKIE_NAME)?.value
     if (raw) {
@@ -25,6 +26,7 @@ export async function proxy(req: NextRequest) {
     return NextResponse.next()
   }
 
+  // Halaman protected — cek session
   const raw = req.cookies.get(COOKIE_NAME)?.value
   if (!raw) {
     const loginUrl = new URL('/admin-login', req.url)
