@@ -1,0 +1,251 @@
+// prisma/schema.prisma
+// Skema database PPDB — PostgreSQL (Supabase)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ── 1. Sekolah ──────────────────────────────────────────────────────────────
+model Sekolah {
+  id            Int      @id @default(autoincrement())
+  nama_sekolah  String   @db.VarChar(100)
+  npsn          String   @db.VarChar(20)
+  alamat        String   @db.Text
+  nomor_telepon String?  @db.VarChar(20)
+  email         String?  @db.VarChar(100)
+  created_at    DateTime @default(now())
+
+  tahun_ajaran TahunAjaran[]
+  admin        Admin[]
+
+  @@map("sekolah")
+}
+
+// ── 2. Tahun Ajaran ─────────────────────────────────────────────────────────
+model TahunAjaran {
+  id         Int               @id @default(autoincrement())
+  sekolah_id Int
+  nama       String            @db.VarChar(20)
+  status     StatusTahunAjaran @default(aktif)
+  created_at DateTime          @default(now())
+
+  sekolah           Sekolah            @relation(fields: [sekolah_id], references: [id])
+  jadwal_ppdb       JadwalPpdb[]
+  jalur_pendaftaran JalurPendaftaran[]
+  pendaftaran       Pendaftaran[]
+  data_siswa        DataSiswa[]
+
+  @@map("tahun_ajaran")
+}
+
+enum StatusTahunAjaran {
+  aktif
+  selesai
+  arsip
+}
+
+// ── 3. Jadwal PPDB ──────────────────────────────────────────────────────────
+model JadwalPpdb {
+  id              Int      @id @default(autoincrement())
+  tahun_ajaran_id Int
+  nama_kegiatan   String   @db.VarChar(100)
+  tanggal_mulai   DateTime @db.Date
+  tanggal_selesai DateTime @db.Date
+  keterangan      String?  @db.Text
+  is_visible      Boolean  @default(true)
+
+  tahun_ajaran TahunAjaran @relation(fields: [tahun_ajaran_id], references: [id])
+
+  @@map("jadwal_ppdb")
+}
+
+// ── 4. Jalur Pendaftaran ────────────────────────────────────────────────────
+model JalurPendaftaran {
+  id              Int       @id @default(autoincrement())
+  tahun_ajaran_id Int
+  nama_jalur      NamaJalur
+  kuota           Int
+  kuota_terpakai  Int       @default(0)
+  deskripsi       String?   @db.Text
+  is_aktif        Boolean   @default(true)
+
+  tahun_ajaran TahunAjaran   @relation(fields: [tahun_ajaran_id], references: [id])
+  pendaftaran  Pendaftaran[]
+
+  @@map("jalur_pendaftaran")
+}
+
+enum NamaJalur {
+  zonasi
+  afirmasi
+  mutasi
+  prestasi
+}
+
+// ── 5. Admin ─────────────────────────────────────────────────────────────────
+model Admin {
+  id            Int       @id @default(autoincrement())
+  sekolah_id    Int
+  nama          String    @db.VarChar(100)
+  username      String    @unique @db.VarChar(50)
+  password_hash String    @db.VarChar(255)
+  role          RoleAdmin @default(operator)
+  is_aktif      Boolean   @default(true)
+  last_login    DateTime?
+  created_at    DateTime  @default(now())
+
+  sekolah Sekolah @relation(fields: [sekolah_id], references: [id])
+
+  @@map("admin")
+}
+
+enum RoleAdmin {
+  superadmin
+  operator
+  viewer
+}
+
+// ── 6. Pendaftaran ───────────────────────────────────────────────────────────
+model Pendaftaran {
+  id                 Int               @id @default(autoincrement())
+  tahun_ajaran_id    Int
+  jalur_id           Int
+  nomor_pendaftaran  String?           @unique @db.VarChar(30)
+  sumber_pendaftaran SumberPendaftaran @default(online)
+  status             StatusPendaftaran @default(menunggu_verifikasi)
+  catatan_admin      String?           @db.Text
+  tanggal_daftar     DateTime          @default(now())
+
+  tahun_ajaran  TahunAjaran          @relation(fields: [tahun_ajaran_id], references: [id])
+  jalur         JalurPendaftaran     @relation(fields: [jalur_id], references: [id])
+  data_orangtua DataOrangtua?
+  data_siswa    DataSiswa?
+  dokumen       DokumenPendaftaran[]
+  hasil_seleksi HasilSeleksi?
+
+  @@index([status, tahun_ajaran_id], name: "idx_status_tahun")
+  @@map("pendaftaran")
+}
+
+enum SumberPendaftaran {
+  online
+  offline
+}
+
+enum StatusPendaftaran {
+  menunggu_verifikasi
+  perlu_perbaikan
+  terverifikasi
+  diterima
+  tidak_diterima
+}
+
+// ── 7. Data Orang Tua ────────────────────────────────────────────────────────
+model DataOrangtua {
+  id             Int    @id @default(autoincrement())
+  pendaftaran_id Int    @unique
+  nama_ayah      String @db.VarChar(100)
+  nama_ibu       String @db.VarChar(100)
+  nomor_wa       String @db.VarChar(20)
+  alamat         String @db.Text
+
+  pendaftaran Pendaftaran @relation(fields: [pendaftaran_id], references: [id])
+
+  @@map("data_orangtua")
+}
+
+// ── 8. Data Siswa ────────────────────────────────────────────────────────────
+model DataSiswa {
+  id              Int          @id @default(autoincrement())
+  pendaftaran_id  Int          @unique
+  nisn            String?      @db.VarChar(15)
+  tahun_ajaran_id Int
+  nomor_kk        String       @db.VarChar(20)
+  nama_lengkap    String       @db.VarChar(100)
+  tempat_lahir    String       @db.VarChar(50)
+  tanggal_lahir   DateTime     @db.Date
+  jenis_kelamin   JenisKelamin
+  agama           Agama
+  asal_sekolah    String?      @db.VarChar(100)
+
+  pendaftaran  Pendaftaran @relation(fields: [pendaftaran_id], references: [id])
+  tahun_ajaran TahunAjaran @relation(fields: [tahun_ajaran_id], references: [id])
+
+  @@unique([nisn, tahun_ajaran_id], name: "uq_nisn_per_tahun")
+  @@index([nisn], name: "idx_nisn")
+  @@map("data_siswa")
+}
+
+enum JenisKelamin {
+  L
+  P
+}
+
+enum Agama {
+  Islam
+  Kristen
+  Katolik
+  Hindu
+  Buddha
+  Konghucu
+}
+
+// ── 9. Dokumen Pendaftaran ───────────────────────────────────────────────────
+model DokumenPendaftaran {
+  id             Int           @id @default(autoincrement())
+  pendaftaran_id Int
+  jenis_dokumen  JenisDokumen
+  path_file      String        @db.VarChar(500)
+  file_size      Int
+  mime_type      String        @db.VarChar(50)
+  status         StatusDokumen @default(menunggu)
+  catatan_admin  String?       @db.Text
+  uploaded_at    DateTime      @default(now())
+
+  pendaftaran Pendaftaran @relation(fields: [pendaftaran_id], references: [id])
+
+  @@index([pendaftaran_id, jenis_dokumen, status], name: "idx_dokumen")
+  @@map("dokumen_pendaftaran")
+}
+
+enum JenisDokumen {
+  akta
+  skl
+  kk
+  ktp_ayah
+  ktp_ibu
+}
+
+enum StatusDokumen {
+  menunggu
+  diterima
+  perlu_revisi
+  ditolak
+}
+
+// ── 10. Hasil Seleksi ────────────────────────────────────────────────────────
+model HasilSeleksi {
+  id              Int              @id @default(autoincrement())
+  pendaftaran_id  Int              @unique
+  hasil           HasilSeleksiEnum
+  catatan         String?          @db.Text
+  published       Boolean          @default(false)
+  tanggal_publish DateTime?
+  tanggal_seleksi DateTime         @default(now())
+
+  pendaftaran Pendaftaran @relation(fields: [pendaftaran_id], references: [id])
+
+  @@index([published, pendaftaran_id], name: "idx_hasil_published")
+  @@map("hasil_seleksi")
+}
+
+enum HasilSeleksiEnum {
+  diterima
+  tidak_diterima
+}

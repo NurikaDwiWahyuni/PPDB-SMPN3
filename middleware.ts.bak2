@@ -1,0 +1,2 @@
+// File ini sudah tidak digunakan. Logic auth ada di proxy.ts (Next.js 16+)
+export {}

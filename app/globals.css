@@ -1,8 +1,16 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #F7F8F0;
+  --foreground: #1c2e3a;
+
+  /* ── Brand palette — SPMB SMP Negeri 3 Bagan Sinembah ── */
+  --color-brand-cream:     #F7F8F0; /* latar utama, lapisan paling terang */
+  --color-brand-sky:       #9CD5FF; /* aksen terang, highlight, badge lembut */
+  --color-brand-azure:     #7AAACE; /* aksen sedang, tombol sekunder, border aktif */
+  --color-brand-navy:      #355872; /* warna utama, tombol primer, teks penting */
+  --color-brand-navy-dark: #2A4860; /* hover/aktif untuk elemen navy */
+  --color-brand-navy-darker: #1F374A; /* sidebar admin, footer, kontras tertinggi */
 }
 
 @theme inline {
@@ -10,17 +18,27 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-brand-cream: var(--color-brand-cream);
+  --color-brand-sky: var(--color-brand-sky);
+  --color-brand-azure: var(--color-brand-azure);
+  --color-brand-navy: var(--color-brand-navy);
+  --color-brand-navy-dark: var(--color-brand-navy-dark);
+  --color-brand-navy-darker: var(--color-brand-navy-darker);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
+
+/* Scrollbar tipis bertema brand */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #EAEDE2; }
+::-webkit-scrollbar-thumb { background: var(--color-brand-azure); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--color-brand-navy); }
+
+/* Pastikan layout tidak overflow horizontal di layar kecil */
+html, body { max-width: 100%; overflow-x: hidden; }
