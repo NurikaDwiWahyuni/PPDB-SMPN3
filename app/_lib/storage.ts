@@ -26,7 +26,9 @@ export async function simpanFile(
   filename: string,
 ): Promise<string> {
   const ext = file.name.split('.').pop() ?? 'bin'
-  const filePath = `${subFolder}/${filename}.${ext}`
+  // Ganti slash di subFolder dengan dash supaya tidak jadi nested path yang bermasalah
+  const safeFolder = subFolder.replace(/\//g, '-')
+  const filePath = `${safeFolder}/${filename}.${ext}`
   const buffer = Buffer.from(await file.arrayBuffer())
 
   const { error } = await supabase.storage
@@ -39,7 +41,7 @@ export async function simpanFile(
   if (error) {
     console.error('[simpanFile] Supabase error full:', JSON.stringify(error))
     console.error('[simpanFile] bucket:', BUCKET, '| path:', filePath)
-    console.error('[simpanFile] SUPABASE_URL:', process.env.NEXT_PUBLIC_SUPABASE_URL ? 'SET' : 'MISSING')
+    console.error('[simpanFile] SUPABASE_URL value:', process.env.NEXT_PUBLIC_SUPABASE_URL)
     console.error('[simpanFile] SERVICE_KEY:', process.env.SUPABASE_SERVICE_ROLE_KEY ? 'SET' : 'MISSING')
     throw new Error(`Gagal upload file: ${error.message}`)
   }

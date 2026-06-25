@@ -127,21 +127,37 @@ export async function POST(
     })
 
     // ── 7. Generate & simpan nomor pendaftaran ──────────────────────────────
+    // Hitung urutan dari jumlah pendaftaran yang ada (tidak pakai ID supaya tidak ada gap)
     const tahun = new Date().getFullYear()
-    const nomor = `PPDB-${tahun}-${String(pendaftaran.id).padStart(5, '0')}`
+    const jumlah = await db.pendaftaran.count({
+      where: { tahun_ajaran_id: tahunAjaran.id },
+    })
+    const nomor = `SPMB-${tahun}-${String(jumlah).padStart(5, '0')}`
     await db.pendaftaran.update({
       where: { id: pendaftaran.id },
       data: { nomor_pendaftaran: nomor },
     })
 
-    // ── 8. Simpan file dokumen ke disk & DB ─────────────────────────────────
-    const savedPaths: string[] = []
+    // ── 9. Kirim notifikasi WhatsApp ────────────────────────────────────────
+    // Kirim WA dulu sebelum upload file supaya notif tetap terkirim walau file gagal
     try {
-      for (const jenis of JENIS_DOKUMEN) {
+      await kirimWA({
+        nomor: dataOrtu.nomor_wa,
+        pesan: pesanNomorPendaftaran(nomor, dataSiswa.nama_lengkap),
+      })
+    } catch (waErr) {
+      console.error('[API /pendaftaran POST] WA error:', waErr)
+      // Jangan gagalkan pendaftaran hanya karena WA gagal
+    }
+
+    // ── 8. Simpan file dokumen ke Supabase ─────────────────────────────────
+    const savedPaths: string[] = []
+    const fileErrors: string[] = []
+    for (const jenis of JENIS_DOKUMEN) {
+      try {
         const file = fd.get(jenis) as File
         const filePath = await simpanFile(file, nomor, jenis)
         savedPaths.push(filePath)
-
         await db.dokumenPendaftaran.create({
           data: {
             pendaftaran_id: pendaftaran.id,
@@ -152,18 +168,19 @@ export async function POST(
             status: 'menunggu',
           },
         })
+      } catch (fileErr) {
+        console.error(`[API /pendaftaran POST] Gagal upload ${jenis}:`, fileErr)
+        fileErrors.push(jenis)
       }
-    } catch (fileErr) {
-      // Rollback: hapus file yang sudah tersimpan
-      await Promise.all(savedPaths.map(hapusFile))
-      throw fileErr
     }
 
-    // ── 9. Kirim notifikasi WhatsApp ────────────────────────────────────────
-    await kirimWA({
-      nomor: dataOrtu.nomor_wa,
-      pesan: pesanNomorPendaftaran(nomor, dataSiswa.nama_lengkap),
-    })
+    // Kalau ada file yang gagal, tandai pendaftaran perlu upload ulang
+    if (fileErrors.length > 0) {
+      await db.pendaftaran.update({
+        where: { id: pendaftaran.id },
+        data: { catatan_admin: `Upload file gagal: ${fileErrors.join(', ')}. Silakan hubungi admin.` },
+      })
+    }
 
     return NextResponse.json({
       success: true,
