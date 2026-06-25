@@ -37,7 +37,8 @@ export async function simpanFile(
     })
 
   if (error) {
-    console.error('[simpanFile] Supabase error:', error)
+    console.error('[simpanFile] Supabase error full:', JSON.stringify(error))
+    console.error('[simpanFile] bucket:', BUCKET, '| path:', filePath)
     console.error('[simpanFile] SUPABASE_URL:', process.env.NEXT_PUBLIC_SUPABASE_URL ? 'SET' : 'MISSING')
     console.error('[simpanFile] SERVICE_KEY:', process.env.SUPABASE_SERVICE_ROLE_KEY ? 'SET' : 'MISSING')
     throw new Error(`Gagal upload file: ${error.message}`)
