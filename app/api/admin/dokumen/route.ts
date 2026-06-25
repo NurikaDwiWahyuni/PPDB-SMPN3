@@ -1,12 +1,11 @@
 // app/api/admin/dokumen/route.ts
 // GET /api/admin/dokumen?id=<dokumen_id>
-// Serve file dokumen ke admin yang sudah login
+// Redirect ke signed URL Supabase Storage untuk admin yang sudah login
 
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/app/_lib/db'
 import { getSessionFromRequest } from '@/app/_lib/session'
-import path from 'path'
-import fs from 'fs/promises'
+import { getFileUrl } from '@/app/_lib/storage'
 
 export async function GET(req: NextRequest) {
   if (!await getSessionFromRequest(req)) {
@@ -24,16 +23,10 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ success: false, message: 'Dokumen tidak ditemukan.' }, { status: 404 })
     }
 
-    const absPath = path.join(process.cwd(), dok.path_file)
-    const buffer  = await fs.readFile(absPath)
+    const signedUrl = await getFileUrl(dok.path_file)
 
-    return new NextResponse(buffer, {
-      headers: {
-        'Content-Type': dok.mime_type,
-        'Content-Disposition': `inline; filename="${path.basename(dok.path_file)}"`,
-        'Cache-Control': 'private, no-store',
-      },
-    })
+    // Redirect ke signed URL Supabase Storage (berlaku 1 jam)
+    return NextResponse.redirect(signedUrl)
   } catch (err) {
     console.error('[GET /api/admin/dokumen]', err)
     return NextResponse.json({ success: false, message: 'File tidak dapat dibuka.' }, { status: 500 })
