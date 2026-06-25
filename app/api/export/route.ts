@@ -379,7 +379,8 @@ export async function GET(request: NextRequest) {
   }
 
   const buf = generateXLSX(rows, 'Data Pendaftaran SPMB 2026/2027 — SMP Negeri 3 Bagan Sinembah')
-  return new NextResponse(buf, {
+  const arrayBuffer = buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength)
+  return new NextResponse(arrayBuffer as ArrayBuffer, {
     headers: {
       'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       'Content-Disposition': `attachment; filename="data-pendaftaran-spmb-2026-${tanggal}.xlsx"`,
